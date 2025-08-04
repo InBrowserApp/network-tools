@@ -1,0 +1,63 @@
+{
+  "name": "@inbrowserapp/network-tools",
+  "version": "1.0.0",
+  "description": "Image utils for canvas, image, and image processing.",
+  "type": "module",
+  "main": "lib/index.js",
+  "module": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src",
+    "!**/__tests__/**/*",
+    "!**/*.test.ts",
+    "!**/*.spec.ts"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "lint": "eslint --fix .",
+    "lint-check": "eslint . --no-fix",
+    "format": "prettier --write src",
+    "format-check": "prettier --check src",
+    "type-check": "tsc --noEmit",
+    "prepare": "husky",
+    "test": "vitest",
+    "test:browser": "vitest --config=vitest.browser.config.ts"
+  },
+  "packageManager": "pnpm@10.12.3+sha512.467df2c586056165580ad6dfb54ceaad94c5a30f80893ebdec5a44c5aa73c205ae4a5bb9d5ed6bb84ea7c249ece786642bbb49d06a307df218d03da41c317417",
+  "keywords": [],
+  "author": "inbrowserapp",
+  "copyright": "inbrowserapp",
+  "repository": "https://github.com/inbrowserapp/network-tools",
+  "homepage": "https://github.com/inbrowserapp/network-tools",
+  "bugs": {
+    "url": "https://github.com/inbrowserapp/network-tools/issues"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/types": "^19.8.1",
+    "@eslint/js": "^9.32.0",
+    "@types/node": "^24.1.0",
+    "@vitest/browser": "^3.2.4",
+    "eslint": "^9.32.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "playwright": "^1.54.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "cidr-tools": "^11.0.3",
+    "is-ip": "^5.0.1"
+  }
+}

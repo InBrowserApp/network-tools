@@ -1,0 +1,164 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  repository_dispatch:
+  pull_request:
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          registry-url: https://npm.pkg.github.com/
+          node-version: lts/*
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Format Check
+        run: pnpm run format-check
+
+      - name: ESLint Check
+        run: pnpm run lint-check
+
+      - name: TypeScript Check
+        run: pnpm run type-check
+
+      - name: Install Playwright
+        run: pnpm exec playwright install --with-deps
+
+      - name: Run Test
+        run: pnpm run test
+
+      - name: Run Test in Browser
+        run: pnpm run test:browser --browser.headless
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      npm_tarball_filename: ${{ steps.pack.outputs.npm_tarball_filename }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          registry-url: https://npm.pkg.github.com/
+          node-version: lts/*
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Pack with pnpm
+        id: pack
+        run: |
+          filename=$(pnpm pack | tail -n 1)
+          echo "npm_tarball_filename=$filename" >> $GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: ${{ steps.pack.outputs.npm_tarball_filename }}
+
+  publish-to-github-packages:
+    name: Publish to GitHub Packages
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          registry-url: https://npm.pkg.github.com/
+          node-version: lts/*
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Build
+        run: pnpm run build
+
+      - run: pnpm publish --no-git-checks --access restricted
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  publish-to-github-release:
+    name: Publish to GitHub Release
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-tarball
+          path: .
+
+      - name: Upload npm tarball to Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ needs.build.outputs.npm_tarball_filename }}
