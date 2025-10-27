@@ -100,7 +100,7 @@ jobs:
           echo "npm_tarball_filename=$filename" >> $GITHUB_OUTPUT
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: npm-tarball
           path: ${{ steps.pack.outputs.npm_tarball_filename }}
